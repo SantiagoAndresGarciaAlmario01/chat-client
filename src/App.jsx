@@ -20,8 +20,14 @@ export default function App() {
       reconnectDelay: 3000,
       onConnect: () => {
         setConectado(true);
-        client.subscribe("/topic/sala", (frame) =>
-          setMensajes((prev) => [...prev, JSON.parse(frame.body)]));
+        client.subscribe("/topic/sala", (frame) => {
+          try {
+            const data = JSON.parse(frame.body);
+            setMensajes((prev) => [...prev, data]);
+          } catch (err) {
+            console.error("Error al procesar mensaje recibido:", err);
+          }
+        });
         client.publish({
           destination: "/app/chat.unirse",
           body: JSON.stringify({ tipo: "UNION", autor: usuario.trim() }),
@@ -47,8 +53,15 @@ export default function App() {
     setTexto("");
   }
 
-  useEffect(() => () => clientRef.current?.deactivate(), []);
-  useEffect(() => finRef.current?.scrollIntoView({ behavior: "smooth" }), [mensajes]);
+  useEffect(() => {
+    return () => {
+      clientRef.current?.deactivate();
+    };
+  }, []);
+
+  useEffect(() => {
+    finRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [mensajes]);
 
   if (!conectado) {
     return (
